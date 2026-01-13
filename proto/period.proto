@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option go_package = "protobuf/period";
+
+package period;
+
+//Request Payload
+message Empty{};
+
+message GetPeriodRequest{
+  uint32 periodId = 1;
+}
+
+//Response Payload
+message GetPeriodListResponse{
+  repeated GetPeriodResponse data = 1;
+}
+
+message GetPeriodResponse{
+  uint32 periodId = 1;
+  string periodName = 2;
+}
+
+//Define RPC service
+service PeriodService{
+  rpc GetPeriodById(GetPeriodRequest) returns (GetPeriodResponse);
+  rpc GetPeriodList(Empty) returns (GetPeriodListResponse);
+}
