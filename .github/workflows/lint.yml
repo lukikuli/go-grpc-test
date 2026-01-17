@@ -1,0 +1,77 @@
+name: Code Quality, Lint & Format
+
+on: [push, pull_request]
+
+# Grant the jobs required permissions for OIDC to work
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  Format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.23
+
+      - name: Install dependencies
+        working-directory: .
+        run: go mod tidy
+
+      - name: Run go fmt
+        working-directory: .
+        run: go fmt ./...
+
+      - name: Run go vet
+        working-directory: .
+        run: go vet ./...
+
+      - name: Update Pull Request with formatted changes
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: format code"
+          title: "[AUTO] Format code"
+          body: "This PR automatically formats the code."
+          branch: ${{ github.head_ref }}
+          base: ${{ github.base_ref }}
+          labels: |
+            automated pr
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Required to report new issues on the PR
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.23
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: .
+
+  gosec:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    #   GOPRIVATE: github.com/your-org/*
+    #   GITHUB_AUTHENTICATION_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+    steps:
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...

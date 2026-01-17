@@ -2,14 +2,38 @@ name: CI-test-1
 
 on: [push]
 
+# Grant the jobs required permissions for OIDC to work
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: write # This is required for actions/checkout
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.23
+          run: go version
+
       - name: Run a one-line script
-        run: echo Hello, world!
+        run: echo Hello, world ${{ secrets.GITHUB_TOKEN }}!
+
       - name: Run a multi-line script
         run: |
           echo "Add other commands here"
           echo "This is a multi-line script"
+
+      - name: Go Semantic Release
+        id: semrel
+        uses: go-semantic-release/action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }} # Use the default token
+
+      - name: Fetch tags created by semantic release
+        if: steps.semrel.outputs.version != null && steps.semrel.outputs.version != ''
+        run: git fetch --tags
